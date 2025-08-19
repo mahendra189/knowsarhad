@@ -1,19 +1,7 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-// Helper to search the knowledge base directly from the database
-async function searchKnowledgeBase(query: string) {
-  return prisma.knowledgeEntry.findMany({
-    where: {
-      OR: [
-        { question: { contains: query, mode: 'insensitive' } },
-        { answer: { contains: query, mode: 'insensitive' } },
-        { tags: { has: query } },
-      ],
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-  });
-}
+
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -51,23 +39,38 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // Try to answer from the community knowledge base first
+
+
+
+    // Get the latest user message
     const userQuery = messages[messages.length - 1]?.content || '';
+  let contextEntries: Array<{ question: string; answer: string }> = [];
     if (userQuery) {
-      const kbResults = await searchKnowledgeBase(userQuery);
-      if (kbResults.length > 0) {
-        // Return the most relevant answer (first match)
-        return NextResponse.json({
-          message: kbResults[0].answer,
-          source: 'community',
-        });
-      }
+      contextEntries = await prisma.knowledgeEntry.findMany({
+        where: {
+          OR: [
+            { question: { contains: userQuery, mode: 'insensitive' } },
+            { answer: { contains: userQuery, mode: 'insensitive' } },
+            { tags: { has: userQuery } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
     }
 
-    // If no relevant community answer, call the AI as before
+    // Build context string for the AI
+    let contextString = '';
+    if (contextEntries.length > 0) {
+      contextString = contextEntries.map((e, i) => `Q${i+1}: ${e.question}\nA${i+1}: ${e.answer}`).join('\n');
+    }
+
+    // Add context as a system prompt if available
     const systemMessage: ChatMessage = {
       role: 'system',
-      content: 'You are a helpful AI assistant created for a college student project. Be helpful, informative, and educational in your responses. Remember that this is part of a learning experience.'
+      content:
+        'You are a helpful AI assistant created for a college student project. Be helpful, informative, and educational in your responses. Use the following knowledge base as context if relevant.\n' +
+        (contextString ? `Knowledge Base:\n${contextString}\n` : ''),
     };
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
