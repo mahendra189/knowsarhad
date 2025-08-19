@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { KnowledgeEntry } from '@/types/knowledge';
-// Helper to search the knowledge base API for relevant answers
-async function searchKnowledgeBase(query: string): Promise<KnowledgeEntry[]> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/knowledge?q=${encodeURIComponent(query)}`);
-  if (!res.ok) return [];
-  return res.json();
+import { prisma } from '@/lib/prisma';
+// Helper to search the knowledge base directly from the database
+async function searchKnowledgeBase(query: string) {
+  return prisma.knowledgeEntry.findMany({
+    where: {
+      OR: [
+        { question: { contains: query, mode: 'insensitive' } },
+        { answer: { contains: query, mode: 'insensitive' } },
+        { tags: { has: query } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+  });
 }
 
 interface ChatMessage {
