@@ -89,18 +89,6 @@ export default function ChatGPTInterface() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="border-b border-gray-700 bg-gray-800 px-4 py-3">
-          <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">College AI Assistant</h1>
-              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Student Demo</span>
-            </div>
-          </div>
-        </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
