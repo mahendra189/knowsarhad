@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import KnowledgeForm from "@/components/KnowledgeForm";
 import { Send, User, Bot, Plus, Loader2 } from "lucide-react";
 
 interface Message {
@@ -87,9 +86,14 @@ export default function ChatGPTInterface() {
 
   return (
     <div className="flex h-screen bg-gray-800">
-      {/* Knowledge Contribution Form */}
-      <div className="absolute top-4 right-4 z-50 w-full max-w-sm">
-        <KnowledgeForm />
+
+      {/* Contribute Button */}
+      <div className="absolute top-4 right-4 z-50">
+        <a href="/contribute">
+          <Button className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
+            Contribute Knowledge
+          </Button>
+        </a>
       </div>
 
   {/* Main Chat Area */}

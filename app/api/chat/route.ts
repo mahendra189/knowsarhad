@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     const aiMessage = data.choices[0].message.content;
     return NextResponse.json({
       message: aiMessage,
-      model: 'meta-llama/llama-3.1-8b-instruct:free'
+      model: 'openai/gpt-3.5-turbo-instruct'
     });
 
   } catch (error) {
