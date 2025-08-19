@@ -86,32 +86,6 @@ export default function ChatGPTInterface() {
 
   return (
     <div className="flex h-screen bg-gray-800">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-900 flex flex-col">
-        <div className="p-3">
-          <Button 
-            onClick={startNewChat}
-            className="w-full flex items-center justify-start gap-3 bg-gray-800 hover:bg-gray-700 text-white border border-gray-600"
-          >
-            <Plus className="w-4 h-4" />
-            New chat
-          </Button>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-3 py-2">
-            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Today</div>
-            <div className="text-sm text-gray-300 p-3 rounded hover:bg-gray-800 cursor-pointer truncate">
-              College AI Assistant
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3 border-t border-gray-700">
-          <div className="text-sm text-gray-300">Student Project</div>
-          <div className="text-xs text-gray-500">OpenRouter AI Demo</div>
-        </div>
-      </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
