@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import KnowledgeForm from "@/components/KnowledgeForm";
 import { Send, User, Bot, Plus, Loader2 } from "lucide-react";
 
 interface Message {
@@ -10,6 +11,7 @@ interface Message {
   text: string;
   type: 'user' | 'bot';
   timestamp: Date;
+  source?: 'community' | 'ai';
 }
 
 export default function ChatGPTInterface() {
@@ -50,14 +52,13 @@ export default function ChatGPTInterface() {
       }
 
       const data = await response.json();
-      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: data.message,
         type: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: data.source === 'community' ? 'community' : 'ai',
       };
-
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error:', error);
@@ -86,8 +87,12 @@ export default function ChatGPTInterface() {
 
   return (
     <div className="flex h-screen bg-gray-800">
+      {/* Knowledge Contribution Form */}
+      <div className="absolute top-4 right-4 z-50 w-full max-w-sm">
+        <KnowledgeForm />
+      </div>
 
-      {/* Main Chat Area */}
+  {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
 
         {/* Messages */}
@@ -129,6 +134,11 @@ export default function ChatGPTInterface() {
                       <div className="text-gray-100 leading-relaxed whitespace-pre-wrap">
                         {msg.text}
                       </div>
+                      {msg.type === 'bot' && msg.source === 'community' && (
+                        <div className="mt-2 inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                          Answered by Community
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

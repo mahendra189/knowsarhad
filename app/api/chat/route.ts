@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { KnowledgeEntry } from '@/types/knowledge';
+// Helper to search the knowledge base API for relevant answers
+async function searchKnowledgeBase(query: string): Promise<KnowledgeEntry[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/knowledge?q=${encodeURIComponent(query)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -35,7 +42,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add system message to provide context
+
+    // Try to answer from the community knowledge base first
+    const userQuery = messages[messages.length - 1]?.content || '';
+    if (userQuery) {
+      const kbResults = await searchKnowledgeBase(userQuery);
+      if (kbResults.length > 0) {
+        // Return the most relevant answer (first match)
+        return NextResponse.json({
+          message: kbResults[0].answer,
+          source: 'community',
+        });
+      }
+    }
+
+    // If no relevant community answer, call the AI as before
     const systemMessage: ChatMessage = {
       role: 'system',
       content: 'You are a helpful AI assistant created for a college student project. Be helpful, informative, and educational in your responses. Remember that this is part of a learning experience.'
@@ -46,10 +67,10 @@ export async function POST(request: NextRequest) {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'X-Title': 'College AI Assistant', // Optional: appears in logs
+        'X-Title': 'College AI Assistant',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-3.5-turbo-instruct', // Using free model
+        model: 'openai/gpt-3.5-turbo-instruct',
         messages: [systemMessage, ...messages],
         max_tokens: 1000,
         temperature: 0.7,
@@ -62,7 +83,6 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenRouter API error:', response.status, errorText);
-      
       return NextResponse.json(
         { 
           error: 'Failed to get response from AI service',
@@ -73,7 +93,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data: OpenRouterResponse = await response.json();
-    
     if (!data.choices || data.choices.length === 0) {
       return NextResponse.json(
         { error: 'No response generated' },
@@ -82,7 +101,6 @@ export async function POST(request: NextRequest) {
     }
 
     const aiMessage = data.choices[0].message.content;
-
     return NextResponse.json({
       message: aiMessage,
       model: 'meta-llama/llama-3.1-8b-instruct:free'
