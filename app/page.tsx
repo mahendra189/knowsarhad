@@ -62,15 +62,7 @@ export default function ChatGPTInterface() {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   const createNewChat = () => {
-    if (messages.length > 0) {
-      const newChatHistory: ChatHistory = {
-        id: Date.now().toString(),
-        title: messages[0]?.text.substring(0, 30) + "..." || "New Chat",
-        messages: [...messages],
-        createdAt: new Date()
-      };
-      setChatHistory(prev => [newChatHistory, ...prev]);
-    }
+    // Only clear the current chat, do not save here
     setMessages([]);
     setCurrentChatId("");
     setSidebarOpen(false);
@@ -92,6 +84,7 @@ export default function ChatGPTInterface() {
       timestamp: new Date()
     };
 
+    // Optimistically add user message
     setMessages(prev => [...prev, userMessage]);
     setMessage("");
     setIsLoading(true);
@@ -122,7 +115,20 @@ export default function ChatGPTInterface() {
         timestamp: new Date(),
         source: data.source === 'community' ? 'community' : 'ai',
       };
-      setMessages(prev => [...prev, botMessage]);
+      // Add bot message and then save to history
+      setMessages(prev => {
+        const updated = [...prev, botMessage];
+        // Save to history after bot response
+        const newChatHistory: ChatHistory = {
+          id: Date.now().toString(),
+          title: updated[0]?.text.substring(0, 30) + "..." || "New Chat",
+          messages: updated,
+          createdAt: new Date()
+        };
+        setChatHistory(prevHistory => [newChatHistory, ...prevHistory]);
+        setCurrentChatId(newChatHistory.id);
+        return updated;
+      });
     } catch (error) {
       console.error('Error:', error);
       const errorMessage: Message = {
