@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getEmbedding } from '@/lib/embedding';
 
 
 interface ChatMessage {
@@ -44,19 +45,16 @@ export async function POST(request: NextRequest) {
 
     // Get the latest user message
     const userQuery = messages[messages.length - 1]?.content || '';
-  let contextEntries: Array<{ question: string; answer: string }> = [];
+    let contextEntries: Array<{ question: string; answer: string }> = [];
     if (userQuery) {
-      contextEntries = await prisma.knowledgeEntry.findMany({
-        where: {
-          OR: [
-            { question: { contains: userQuery, mode: 'insensitive' } },
-            { answer: { contains: userQuery, mode: 'insensitive' } },
-            { tags: { has: userQuery } },
-          ],
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      });
+      // Semantic search using embedding
+      const embedding = await getEmbedding(userQuery);
+      const similar = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT question, answer, 1 - (embedding <=> $1::vector) AS similarity FROM "KnowledgeEntry" WHERE embedding IS NOT NULL ORDER BY embedding <=> $1::vector LIMIT 5`,
+        embedding
+      );
+      // Use a similarity threshold if needed, or just take the top 5
+      contextEntries = Array.isArray(similar) ? similar : [];
     }
 
     // Build context string for the AI
