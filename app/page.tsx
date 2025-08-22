@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, User, Bot, Plus, Loader2 } from "lucide-react";
+import { Send, User, Bot, Plus, Loader2, ArrowUp } from "lucide-react";
 
 interface Message {
   id: string;
@@ -182,12 +182,12 @@ export default function ChatGPTInterface() {
               <Button
                 onClick={handleSubmit}
                 disabled={!message.trim() || isLoading}
-                className="absolute right-2 bottom-2 w-8 h-8 p-0 bg-white hover:bg-gray-200 disabled:bg-gray-600 disabled:opacity-50"
+                className="absolute right-2 bottom-2 w-8 h-8 p-0 bg-white hover:bg-gray-200 disabled:bg-gray-600 disabled:opacity-50 rounded-full"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 text-gray-800 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4 text-gray-800" />
+                  <ArrowUp className="w-4 h-4 text-gray-800" />
                 )}
               </Button>
             </div>
