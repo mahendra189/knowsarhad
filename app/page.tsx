@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Bot, Loader2, ArrowUp } from "lucide-react";
+import { User, Bot, Loader2, ArrowUp, MessageCircle, Plus, Menu, X } from "lucide-react";
 
 interface Message {
   id: string;
@@ -13,10 +13,74 @@ interface Message {
   source?: 'community' | 'ai';
 }
 
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+}
+
 export default function ChatGPTInterface() {
   const [message, setMessage] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  // Load chat history from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('ks_chat_history');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Convert date strings back to Date objects
+        if (Array.isArray(parsed)) {
+          const chats = parsed.map((chat: any) => ({
+            ...chat,
+            createdAt: new Date(chat.createdAt),
+            messages: Array.isArray(chat.messages) ? chat.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            })) : []
+          }));
+          setChatHistory(chats);
+          // If there is at least one chat, load the most recent as current
+          if (chats.length > 0) {
+            setMessages([...chats[0].messages]);
+            setCurrentChatId(chats[0].id);
+          }
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }, []);
+
+  // Save chat history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ks_chat_history', JSON.stringify(chatHistory));
+  }, [chatHistory]);
+  const [currentChatId, setCurrentChatId] = useState<string>("");
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  const createNewChat = () => {
+    if (messages.length > 0) {
+      const newChatHistory: ChatHistory = {
+        id: Date.now().toString(),
+        title: messages[0]?.text.substring(0, 30) + "..." || "New Chat",
+        messages: [...messages],
+        createdAt: new Date()
+      };
+      setChatHistory(prev => [newChatHistory, ...prev]);
+    }
+    setMessages([]);
+    setCurrentChatId("");
+    setSidebarOpen(false);
+  };
+
+  const loadChat = (chat: ChatHistory) => {
+    setMessages([...chat.messages]);
+    setCurrentChatId(chat.id);
+    setSidebarOpen(false);
+  };
 
   const handleSubmit = async (): Promise<void> => {
     if (!message.trim() || isLoading) return;
@@ -80,33 +144,123 @@ export default function ChatGPTInterface() {
     }
   };
 
-
-
   return (
     <div className="flex h-screen bg-neutral-900">
+      
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed lg:relative lg:translate-x-0 z-40 w-64 h-full bg-neutral-800 border-r border-gray-700 transition-transform duration-300 ease-in-out`}>
+        <div className="flex flex-col h-full">
+          
+          {/* Logo and New Chat */}
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src="/logo.png"
+                alt="KnowSarhadAI Logo"
+                className="w-10 h-10 rounded-lg shadow-lg object-contain bg-white"
+              />
+              <div>
+                <h1 className="text-lg font-bold text-white leading-tight">KnowSarhadAI</h1>
+                <p className="text-xs text-gray-400">Sarhad College</p>
+              </div>
+            </div>
+            <Button 
+              onClick={createNewChat}
+              className="w-full bg-neutral-700 hover:bg-neutral-600 text-white border border-gray-600 rounded-lg flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Chat
+            </Button>
+          </div>
 
-      {/* Contribute Button */}
-      <div className="absolute top-4 right-4 z-50">
-        <a href="/contribute">
-          <Button className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
-            Contribute Knowledge
-          </Button>
-        </a>
+          {/* Chat History */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Recent Chats</h3>
+            <div className="space-y-2">
+              {chatHistory.length === 0 ? (
+                <p className="text-gray-500 text-sm">No chat history yet</p>
+              ) : (
+                chatHistory.map((chat) => (
+                  <button
+                    key={chat.id}
+                    onClick={() => loadChat(chat)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors hover:bg-neutral-700 ${
+                      currentChatId === chat.id ? 'bg-neutral-700 border border-gray-600' : 'bg-neutral-800'
+                    }`}
+                  >
+                    <div className="text-sm text-white truncate font-medium">
+                      {chat.title}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                        {chat.createdAt.toLocaleDateString()} {chat.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-700">
+            <p className="text-xs text-gray-400 text-center">
+              Powered by OpenRouter API
+            </p>
+          </div>
+        </div>
       </div>
 
-  {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-neutral-800">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden bg-transparent hover:bg-neutral-700 text-white p-2"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+            <div className="lg:hidden flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="KnowSarhadAI Logo"
+                className="w-8 h-8 rounded-lg shadow-lg object-contain bg-white"
+              />
+              <div>
+                <h1 className="text-base font-bold text-white leading-tight">KnowSarhadAI</h1>
+                <p className="text-xs text-gray-400">Sarhad College</p>
+              </div>
+            </div>
+          </div>
+          
+          <a href="/contribute">
+            <Button className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
+              Contribute Knowledge
+            </Button>
+          </a>
+        </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-md mx-auto px-4">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Bot className="w-6 h-6 text-white" />
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="KnowSarhadAI Logo"
+                  className="w-16 h-16 rounded-full mx-auto mb-4 shadow-lg object-contain bg-white"
+                />
                 <h2 className="text-2xl font-semibold text-gray-200 mb-3">
-                  Welcome to Knowsarhad! What would you like to learn or ask about today?
+                  Welcome to KnowSarhadAI! What would you like to learn or ask about today?
                 </h2>
                 <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-4 mb-4">
                   <p className="text-sm text-yellow-200">
@@ -127,9 +281,11 @@ export default function ChatGPTInterface() {
                   >
                     {!isUser && (
                       <div className="flex flex-col items-center mr-2">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <Bot className="w-5 h-5 text-white" />
-                        </div>
+                        <img
+                          src="/logo.png"
+                          alt="KnowSarhadAI Logo"
+                          className="w-8 h-8 rounded-full shadow-sm object-contain bg-white"
+                        />
                       </div>
                     )}
                     <div
@@ -159,7 +315,7 @@ export default function ChatGPTInterface() {
               {isLoading && (
                 <div className="flex w-full py-3 px-2 justify-start">
                   <div className="flex flex-col items-center mr-2">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <Bot className="w-5 h-5 text-white" />
                     </div>
                   </div>
