@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KnowledgeEntry } from "@/types/knowledge";
+
 
 export default function KnowledgeForm() {
   const [question, setQuestion] = useState("");
@@ -34,8 +34,17 @@ export default function KnowledgeForm() {
       setAnswer("");
       setTags("");
       setAuthor("");
-    } catch (err: any) {
-      setError(err.message || "Unknown error");
+  } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof (err as { message?: string }).message === "string"
+      ) {
+        setError((err as { message: string }).message);
+      } else {
+        setError("Unknown error");
+      }
     } finally {
       setLoading(false);
     }

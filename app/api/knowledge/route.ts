@@ -12,12 +12,17 @@ export async function GET(req: NextRequest) {
     // Use raw SQL for vector similarity search
     // 0.8 is a typical similarity threshold, adjust as needed
     const threshold = 0.8;
-    const similar = await prisma.$queryRawUnsafe<any[]>(
+  const similar = await prisma.$queryRawUnsafe<unknown[]>(
       `SELECT *, 1 - (embedding <=> $1) AS similarity FROM "KnowledgeEntry" WHERE embedding IS NOT NULL ORDER BY embedding <=> $1 LIMIT 10`,
       embedding
     );
     // If no sufficiently similar result, fallback to keyword search
-    if (Array.isArray(similar) && similar.length && similar[0].similarity > threshold) {
+    if (
+      Array.isArray(similar) &&
+      similar.length &&
+      typeof (similar[0] as { similarity: number }).similarity === "number" &&
+      (similar[0] as { similarity: number }).similarity > threshold
+    ) {
       results = similar;
     } else {
       results = await prisma.knowledgeEntry.findMany({

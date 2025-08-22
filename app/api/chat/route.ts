@@ -49,12 +49,12 @@ export async function POST(request: NextRequest) {
     if (userQuery) {
       // Semantic search using embedding
       const embedding = await getEmbedding(userQuery);
-      const similar = await prisma.$queryRawUnsafe<any[]>(
+  const similar = await prisma.$queryRawUnsafe<unknown[]>(
         `SELECT question, answer, 1 - (embedding <=> $1::vector) AS similarity FROM "KnowledgeEntry" WHERE embedding IS NOT NULL ORDER BY embedding <=> $1::vector LIMIT 5`,
         embedding
       );
       // Use a similarity threshold if needed, or just take the top 5
-      contextEntries = Array.isArray(similar) ? similar : [];
+  contextEntries = Array.isArray(similar) ? (similar as { question: string; answer: string }[]) : [];
     }
 
     // Build context string for the AI

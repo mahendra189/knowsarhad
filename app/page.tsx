@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, User, Bot, Plus, Loader2, ArrowUp } from "lucide-react";
+import { User, Bot, Loader2, ArrowUp } from "lucide-react";
 
 interface Message {
   id: string;
@@ -80,9 +80,7 @@ export default function ChatGPTInterface() {
     }
   };
 
-  const startNewChat = (): void => {
-    setMessages([]);
-  };
+
 
   return (
     <div className="flex h-screen bg-neutral-900">
